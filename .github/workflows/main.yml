@@ -37,7 +37,8 @@ jobs:
         run: npm run build
 
       - name: Create deployment package
-        run: tar -czf deploy.tar.gz .next node_modules package.json
+        run: |
+          tar -czf deploy.tar.gz .next node_modules package.json
           echo "CI 완료 / CD 제외"
 
 #      - name: Transfer package to Azure VM
