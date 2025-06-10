@@ -36,9 +36,9 @@ jobs:
           script: |
             docker pull ${{ secrets.DOCKER_USERNAME }}/jcg-next-app:latest
 
-#            docker stop jcg-app-vm || true
-#            docker rm jcg-app-vm || true
-            docker run -d --name jcg-app-vm -p 3000:3000 \
+            docker stop jcg-app-2 || true
+            docker rm jcg-app-2 || true
+            docker run -d --name jcg-app-2 -p 3000:3000 \
 #              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
               ${{ secrets.DOCKER_USERNAME }}/jcg-next-app:latest
 
