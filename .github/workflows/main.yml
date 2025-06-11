@@ -1,76 +1,66 @@
-# .github/workflows/main.yml
+name: 🚀 Deploy to Azure App Service (Docker Hub)
 
-name: Deploy Next.js App to Azure VM
-
-# 🔴 트리거: main 브랜치에 push할 때 자동 실행
 on:
   push:
-    branches:
-      - main
+    branches: [docker-ci-cd-04]
 
 jobs:
-  build-and-deploy:
-    name: Build and Deploy
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ CI (Continuous Integration) 단계
-      - name: Checkout source code
-        uses: actions/checkout@v4
+      - name: 📥 Checkout source
+        uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: 🐳 Login to Docker Hub
+        uses: docker/login-action@v2
         with:
-          node-version: "20"
-          cache: 'npm'
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Create .env file for build
+      - name: 🏗 Build and push Docker image
         run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.local
-          echo "NEXTAUTH_SECRET=${{ secrets.NEXTAUTH_SECRET }}" >> .env.local
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest
 
-      - name: Install dependencies and Lint and Test
-        run: |
-          npm install
-          npm run lint
-          npm run test
-
-      - name: Build Application
-        run: npm run build
-
-      - name: Create deployment package
-        run: |
-          tar -czf deploy.tar.gz .next node_modules package.json
-          echo "CI 완료 / CD 제외"
-
-      # ✅ CD (Continuous Deployment) 단계
-      - name: Transfer package to Azure VM
-        uses: appleboy/scp-action@master
+      - name: 🔐 Azure CLI login
+        uses: azure/login@v1
         with:
-          host: ${{ secrets.VM_HOST }}
-          username: azureuser
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "deploy.tar.gz"
-          target: "/home/azureuser"
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Deploy application on Azure VM
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: azureuser
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            mkdir -p /home/azureuser/app
-            mv /home/azureuser/deploy.tar.gz /home/azureuser/app/
-            cd /home/azureuser/app
-            tar -xzf deploy.tar.gz
-            rm deploy.tar.gz
+      - name: 🛠 Create Web App (if not exists)
+        run: |
+          if ! az webapp show --name todo-webapp-dev --resource-group rg-appservice-infrastructure-dev-04 &> /dev/null; then
+            az webapp create \
+              --resource-group rg-appservice-infrastructure-dev-04 \
+              --plan asp-dev \
+              --name todo-webapp-dev
 
-            pm2 stop jcg-vm-app || true
-            pm2 delete jcg-vm-app || true
+            # 바로 컨테이너 설정
+            az webapp config container set \
+              --name todo-webapp-dev \
+              --resource-group rg-appservice-infrastructure-dev-04 \
+              --docker-custom-image-name ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest \
+              --docker-registry-server-url https://index.docker.io
+          fi
 
-            # pm2 start 명령어 한 줄에 환경변수를 직접 주입하여 실행합니다.
-            DATABASE_URL='${{ secrets.DATABASE_URL }}' NEXTAUTH_SECRET='${{ secrets.NEXTAUTH_SECRET }}' pm2 start "npx next start" --name "jcg-vm-app"
+      - name: ⚙️ Set App Service port setting
+        run: |
+          az webapp config appsettings set \
+            --name todo-webapp-dev \
+            --resource-group rg-appservice-infrastructure-dev-04 \
+            --settings WEBSITES_PORT=3000
 
-            pm2 save
-            echo "🚀 Deployment successful!"
+      - name: 🚀 Configure App Service to use Docker Hub
+        run: |
+          az webapp config container set \
+            --name todo-webapp-dev \
+            --resource-group rg-appservice-infrastructure-dev-04 \
+            --container-image-name ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest \
+            --container-registry-url https://index.docker.io
+
+      - name: 🔁 Restart App Service
+        run: |
+          az webapp restart \
+            --name todo-webapp-dev \
+            --resource-group rg-appservice-infrastructure-dev-04
