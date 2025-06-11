@@ -33,10 +33,10 @@ jobs:
         run: |
           if ! az webapp show --name jcg-webapp-dev --resource-group rg-appservice-infrastructure-dev-04 &> /dev/null; then
             az webapp create \
-            --resource-group rg-appservice-infrastructure-dev-04 \
-            --plan asp-dev \
-            --name jcg-webapp-dev \
-            --deployment-container-image-name ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest
+              --resource-group rg-appservice-infrastructure-dev-04 \
+              --plan asp-dev \
+              --name jcg-webapp-dev \
+              --deployment-container-image-name ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest
           fi
 
       - name: ⚙️ Set App Service port setting
