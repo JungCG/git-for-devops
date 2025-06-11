@@ -66,11 +66,11 @@ jobs:
             tar -xzf deploy.tar.gz
             rm deploy.tar.gz
 
-            pm2 stop todo-app || true
-            pm2 delete todo-app || true
+            pm2 stop jcg-vm-app || true
+            pm2 delete jcg-vm-app || true
 
             # pm2 start 명령어 한 줄에 환경변수를 직접 주입하여 실행합니다.
-            DATABASE_URL='${{ secrets.DATABASE_URL }}' NEXTAUTH_SECRET='${{ secrets.NEXTAUTH_SECRET }}' pm2 start "npx next start" --name "todo-app"
+            DATABASE_URL='${{ secrets.DATABASE_URL }}' NEXTAUTH_SECRET='${{ secrets.NEXTAUTH_SECRET }}' pm2 start "npx next start" --name "jcg-vm-app"
 
             pm2 save
             echo "🚀 Deployment successful!"
