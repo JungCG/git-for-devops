@@ -33,17 +33,10 @@ jobs:
         run: |
           if ! az webapp show --name jcg-webapp-dev --resource-group rg-appservice-infrastructure-dev-04 &> /dev/null; then
             az webapp create \
-              --resource-group rg-appservice-infrastructure-dev-04 \
-              --plan asp-dev \
-              --os-type Linux \
-              --name jcg-webapp-dev
-
-            # 바로 컨테이너 설정
-            az webapp config container set \
-              --name jcg-webapp-dev \
-              --resource-group rg-appservice-infrastructure-dev-04 \
-              --docker-custom-image-name ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest \
-              --docker-registry-server-url https://index.docker.io
+            --resource-group rg-appservice-infrastructure-dev-04 \
+            --plan asp-dev \
+            --name jcg-webapp-dev \
+            --deployment-container-image-name ${{ secrets.DOCKER_USERNAME }}/todo-next-app:latest
           fi
 
       - name: ⚙️ Set App Service port setting
