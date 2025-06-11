@@ -35,6 +35,7 @@ jobs:
             az webapp create \
               --resource-group rg-appservice-infrastructure-dev-04 \
               --plan asp-dev \
+              --os-type Linux \
               --name jcg-webapp-dev
 
             # 바로 컨테이너 설정
